@@ -175,15 +175,30 @@
     const faces = FACES.map(n => ({ file: 'head', key: 'face_' + n, name: 'head_' + n + suffix }));
     let pending = RCFG.parts.length + faces.length;
     pet.partsSuffix = suffix;
+    // Character art that doesn't exist yet (head_2.png ...) falls back to the
+    // plain picture, so every character is a ragdoll as soon as character 1 is.
+    // If the BODY itself is the plain one, the pet is drawn with its drawFilter
+    // tint so it still looks like a different character.
+    let borrowed = false;
     RCFG.parts.concat(faces).forEach(part => {
       const im = new Image();
+      const plain = 'images/parts/' + (part.file) + '.png';
+      let triedPlain = !suffix;
       const done = ok => {
         if (ok) imgs[part.key || part.file] = im;
+        if (!ok && !triedPlain) {
+          triedPlain = true;
+          if (part.file === 'body') borrowed = true;
+          if (part.key) { im.src = 'images/parts/' + part.name.replace(suffix, '') + '.png'; return; }
+          im.src = plain;
+          return;
+        }
         if (--pending > 0 || !alive || pet.partsSuffix !== suffix) return;
         pet.partImgs = imgs;
         pet.faceImgs = {};
         FACES.forEach(n => { if (imgs['face_' + n]) pet.faceImgs[n] = imgs['face_' + n]; });
         pet.hasParts = RCFG.parts.every(q => q.optional || imgs[q.file]);
+        pet.tintArt = borrowed;   // drawing character 1's body: tint it (drawFilter)
         pet.artSig = null;
         pet.placed = false;
       };
@@ -793,6 +808,7 @@
 
       if (isRag(pet, i) && pet.body && pet.body.parts) {
         ctx.save();
+        if (pet.tintArt) ctx.filter = pet.drawFilter;
         pet.body.draw(ctx, 0, 0, hdDpr());
         ctx.restore();
         return;
