@@ -45,7 +45,10 @@
   }
 
   // ===========================================================
-  // 🐾 PET IMAGES
+  // 🐾 PET IMAGES (per pet)
+  // Convention for 2 art (optional):
+  //   base_2.png, base_happy_2.png, base_disgust_2.png, base_freeze_2.png, base_spicy_2.png
+  // If missing, we draw pet1 art with a hue-rotate tint so it still looks like a different pet.
   // ===========================================================
   function createImg(src) {
     const img = new Image();
@@ -65,20 +68,21 @@
     };
   }
 
-  const petMoodSets = [
-    loadMoodSet(''),
-  ];
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', xFrac: 0.5, drawFilter: 'none' }];
 
-  const pets = [
-    {
-      x: canvas.width * 0.5,
-      y: canvas.height - 150 - 150,
-      w: 400,
-      h: 450,
-      mood: "normal",
-      drawFilter: "none",
-    },
-  ];
+  const petMoodSets = PET_CFG.map(c => loadMoodSet(c.artSuffix || ''));
+
+  const pets = PET_CFG.map((c, i) => ({
+    x: canvas.width * ((c.xFrac != null) ? c.xFrac : (i + 1) / (PET_CFG.length + 1)),
+    y: canvas.height - 150 - 150,
+    w: 400,
+    h: 450,
+    mood: "normal",
+    drawFilter: c.drawFilter || "none",
+  }));
 
   // Match the main screen: derive width from the base image's real aspect ratio.
   function syncPetWidths() {
@@ -95,11 +99,11 @@
     if (!img || img._failed) {
       set = petMoodSets[0];
       img = (set[mood] || set.normal);
-      useTintFallback = (i === 1);
+      useTintFallback = (i !== 0);
     }
     if (!img || img._failed || !img.complete || img.naturalWidth === 0) return;
-
     img = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, i) : img);
+
     ctx.save();
     ctx.filter = useTintFallback ? (pets[i] && pets[i].drawFilter ? pets[i].drawFilter : "none") : "none";
     ctx.drawImage(img, x, y, w, h);
@@ -376,7 +380,7 @@
       // (If you provide real 2 outfit art later, it will render without tint.)
       const set = petMoodSets[i] || petMoodSets[0];
       const img = (set && set[pet.mood]) || (set && set.normal);
-      const needsTint = (i === 1) && (!img || img._failed);
+      const needsTint = (i !== 0) && (!img || img._failed);
       if (window.drawOutfitOverlay) {
         ctx.save();
         ctx.filter = needsTint ? (pet.drawFilter || "none") : "none";

@@ -60,15 +60,21 @@
     };
   }
 
-  const baseSets = [loadBaseSet('')];
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', xFrac: 0.5, drawFilter: 'none' }];
+  const NUM_PETS = PET_CFG.length;
+
+  const baseSets = PET_CFG.map(c => loadBaseSet(c.artSuffix || ''));
 
   const imgs = {
     bed: createImg("bed.png"),
     blanket1: createImg("blanket1.png"),
   };
 
-  // === Pet (1) ===
-  function makePet(x) {
+  // === Pets (from config) ===
+  function makePet(x, idx) {
     const p = {
       x,
       y: baseCanvas.height - 170 - 170,
@@ -78,16 +84,16 @@
       oldx: 0,
       oldy: 0,
       visible: true,
-      drawFilter: "none",
+      drawFilter: PET_CFG[idx].drawFilter || "none",
     };
     p.oldx = p.x;
     p.oldy = p.y;
     return p;
   }
 
-  const pets = [
-    makePet(baseCanvas.width * 0.5),
-  ];
+  const pets = PET_CFG.map((c, i) =>
+    makePet(baseCanvas.width * ((c.xFrac != null) ? c.xFrac : (i + 1) / (NUM_PETS + 1)), i)
+  );
 
   // Re-sync widths to the true aspect ratio once the base image has loaded.
   if (window.PetArt) window.PetArt.onReady(() => {
@@ -101,7 +107,7 @@
     y: baseCanvas.height - BED_OFFSET,
     w: BED_W,
     h: BED_H,
-    petsInBed: [false],          // which pets are in the bed
+    petsInBed: PET_CFG.map(() => false),   // which pets are in the bed
     sleeping: false,             // blanket is locked = actually sleeping
   };
 
@@ -123,8 +129,8 @@
   }
 
   // === Physics ===
-  const vy = [0, 0];
-  const vx = [0, 0];
+  const vy = PET_CFG.map(() => 0);
+  const vx = PET_CFG.map(() => 0);
   const gravity = 1.0;
   const damping = 0.94;
   let groundY = baseCanvas.height - GROUND_OFFSET;
@@ -139,7 +145,10 @@
   }
 
   function anyPetInBed() {
-    return bed.petsInBed[0];
+    return bed.petsInBed.some(Boolean);
+  }
+  function allPetsInBed() {
+    return bed.petsInBed.every(Boolean);
   }
 
   function setBlanketPointerEvents() {
@@ -147,9 +156,12 @@
     blanketCanvas.style.pointerEvents = interactable ? "auto" : "none";
   }
 
-  // Where the pet sits inside the bed (centered)
-  function petBedX() {
-    return bed.x;
+  // Where each pet sits inside the bed: 1 pet sleeps centered, more pets
+  // spread evenly between -0.18 and +0.18 of the bed width.
+  function petBedX(petIdx) {
+    if (NUM_PETS === 1) return bed.x;
+    const t = petIdx / (NUM_PETS - 1); // 0..1
+    return bed.x + bed.w * (t * 0.36 - 0.18);
   }
   function petBedY() {
     return bed.y;
@@ -212,8 +224,8 @@
       vy[i] = 0;
       vx[i] = 0;
 
-      // Show blanket once the pet is in bed
-      if (!bed.sleeping && bed.petsInBed[0]) {
+      // Show blanket only when EVERY pet is in bed
+      if (!bed.sleeping && allPetsInBed()) {
         blanket.visible = true;
         blanket.locked = false;
         setBlanketPointerEvents();
@@ -260,7 +272,7 @@
       bed.sleeping = true;
 
       // Start sleeping for all pets in bed
-      for (let i = 0; i < pets.length; i++) {
+      for (let i = 0; i < NUM_PETS; i++) {
         if (bed.petsInBed[i] && window.PetStats) {
           window.PetStats.sleep(i);
         }
@@ -286,13 +298,13 @@
 
     if (p.x > bedLeft && p.x < bedRight && p.y > bedTop && p.y < bedBottom) {
       // Wake up all pets in the bed
-      for (let i = 0; i < pets.length; i++) {
+      for (let i = 0; i < NUM_PETS; i++) {
         if (!bed.petsInBed[i]) continue;
 
         const pet = pets[i];
         pet.visible = true;
         // Pop out above the bed
-        pet.x = petBedX();
+        pet.x = petBedX(i);
         pet.y = bed.y - bed.h / 2 - pet.h / 2;
         vx[i] = 0;
         vy[i] = 0;
@@ -300,7 +312,7 @@
         pet.oldy = pet.y;
       }
 
-      bed.petsInBed = [false];
+      bed.petsInBed = PET_CFG.map(() => false);
       bed.sleeping = false;
       blanket.visible = false;
       blanket.locked = false;
@@ -386,11 +398,11 @@
   }
 
   function drawPetsInBed() {
-    // Draw sleeping pets at their left/right positions inside the bed
-    for (let i = 0; i < pets.length; i++) {
+    // Draw sleeping pets at their positions inside the bed
+    for (let i = 0; i < NUM_PETS; i++) {
       if (!bed.petsInBed[i]) continue;
 
-      const px = petBedX();
+      const px = petBedX(i);
       const py = petBedY();
       const pet = pets[i];
 
@@ -400,7 +412,7 @@
       if (!img || img._failed) {
         set = baseSets[0];
         img = set.stand;
-        useTint = (i === 1);
+        useTint = (i !== 0);
       }
 
       baseCtx.save();
@@ -428,7 +440,7 @@
       if (!img || img._failed) {
         set = baseSets[0];
         img = set[state];
-        useTint = (i === 1);
+        useTint = (i !== 0);
       }
 
       baseCtx.save();
@@ -461,7 +473,7 @@
   const ENERGY_PER_TICK = 10;
   const sleepInterval = setInterval(() => {
     if (!bed.sleeping) return;
-    for (let i = 0; i < pets.length; i++) {
+    for (let i = 0; i < NUM_PETS; i++) {
       if (bed.petsInBed[i] && window.PetStats) {
         window.PetStats.sleep(i, ENERGY_PER_TICK);
       }
@@ -469,8 +481,8 @@
   }, 1000);
 
   function updateSleepingFlags() {
-    window._petsSleeping = [false];
-    for (let i = 0; i < pets.length; i++) {
+    window._petsSleeping = PET_CFG.map(() => false);
+    for (let i = 0; i < NUM_PETS; i++) {
       if (bed.sleeping && bed.petsInBed[i]) {
         window._petsSleeping[i] = true;
       }

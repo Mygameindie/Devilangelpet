@@ -10,6 +10,11 @@
   const groundHeight = 100;
   let groundY = canvas.height - groundHeight;
 
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', xFrac: 0.5, drawFilter: 'none' }];
+
   // ===========================================================
   // 🖼️ Images
   // Clothes are handled globally by outfit_system.js
@@ -22,7 +27,9 @@
     return img;
   }
 
-  // Base set for the pet.
+  // Per-pet base sets.
+  // Each pet's art uses its config artSuffix: "" -> base.png, "_2" -> base_2.png.
+  // If missing, we fall back to pet1 art and apply the pet's drawFilter so it is still visually distinct.
   function loadBaseSet(suffix) {
     return {
       stand: createImg(`base${suffix}.png`),
@@ -37,14 +44,8 @@
     };
   }
 
-  // === Base images (single pet) ===
-  // These plain names are the GIRL art. When pet_gender.js is set to "boy"
-  // (or the player flips the switch) it loads the "_2" version of each of
-  // these files instead — base_2.png, base_1_2.png — and falls back to the
-  // plain file if that boy picture doesn't exist yet.
-  const baseSets = [
-    loadBaseSet(''),
-  ];
+  // === Base images (per pet) ===
+  const baseSets = PET_CFG.map(c => loadBaseSet(c.artSuffix || ''));
 
   // NOTE: Do NOT create a clothes button here.
   // outfit_system.js creates ONE global button and keeps outfit state in window.currentOutfit.
@@ -55,15 +56,16 @@
     ctx.drawImage(img, x, y, w, h);
   }
 
-  // === Pets (2) ===
+  // === Pets (from config) ===
   function makePet(x, idx) {
     const p = {
       x,
       y: canvas.height - 170 - 170,
       w: 400,
       h: 450,
-      type: 'pet1',
-      drawFilter: 'none',
+      type: 'pet' + (idx + 1),
+      // If this pet's art is missing, we tint the fallback so it still looks like a different pet.
+      drawFilter: PET_CFG[idx].drawFilter || 'none',
       dragging: false,
       oldx: 0,
       oldy: 0,
@@ -86,9 +88,9 @@
   }
 
   
-  const pets = [
-    makePet(canvas.width * 0.5, 0),
-  ];
+  const pets = PET_CFG.map((c, i) =>
+    makePet(canvas.width * (c.xFrac != null ? c.xFrac : (i + 1) / (PET_CFG.length + 1)), i)
+  );
 
   // === Original-size base (uniform for both pets) ===
   // Match every pet's box to pet 1's base art aspect ratio, so both pets render
@@ -110,18 +112,6 @@
   const baseImg = baseSets[0].stand;
   if (baseImg && baseImg.complete && baseImg.naturalWidth) syncPetAspect();
   else if (baseImg) baseImg.addEventListener('load', syncPetAspect);
-
-  // Boy and girl art can have different proportions. pet_gender.js re-points
-  // the base images when the gender is switched, so re-measure once the new
-  // picture is in (see pet_gender.js for the girl/boy setting).
-  if (window.PetGender && typeof window.PetGender.onChange === 'function') {
-    window.PetGender.onChange(() => {
-      const im = baseSets[0].stand;
-      if (!im) return;
-      if (im.complete && im.naturalWidth) syncPetAspect();
-      else im.addEventListener('load', syncPetAspect, { once: true });
-    });
-  }
 
   // === Physics ===
   // All values are tuned per 60fps frame; update() scales by real elapsed time
@@ -159,7 +149,7 @@
     const max = (window.HDCanvas && window.HDCanvas.maxDPR) || 2;
     return Math.min(max, Math.max(1, window.devicePixelRatio || 1));
   }
-  function partSuffix(i) { return (window.PetGender && typeof window.PetGender.suffix === 'function') ? window.PetGender.suffix() : ''; }
+  function partSuffix(i) { return (PET_CFG[i] && PET_CFG[i].artSuffix) || ''; }
 
   // Heads besides the normal one: 1 = touched by a toy (head_1.png), the rest
   // are set by PetFace (pet_stats.js) from what you do to the pet (shy_1 = shy + toy).
@@ -425,9 +415,6 @@
   }
 
   pets.forEach(loadParts);
-  if (window.PetGender && typeof window.PetGender.onChange === 'function') {
-    window.PetGender.onChange(() => { if (alive) pets.forEach(loadParts); });
-  }
 
   // === Fly animation ===
   const speed = 10;
@@ -578,9 +565,9 @@
     if (gy === groundY) return;
     groundY = gy;
 
-    // keep pet in bounds
-    pets[0].x = Math.min(pets[0].x, canvas.width - pets[0].w / 2);
+    // keep pets in bounds
     pets.forEach(p => {
+      p.x = Math.max(p.w / 2, Math.min(p.x, canvas.width - p.w / 2));
       if (p.y + p.h / 2 > groundY) {
         p.y = groundY - p.h / 2;
         p.oldy = p.y;
@@ -787,7 +774,7 @@
       if (!img || img._failed) {
         set = baseSets[0];
         img = set[state];
-        useTintFallback = (i === 1);
+        useTintFallback = (i !== 0);
       }
 
       // Toy3-style: while a toy is touching this pet, swap to the toy-touched
@@ -797,7 +784,7 @@
         let toyImg = set.toy;
         if (!toyImg || toyImg._failed) {
           toyImg = baseSets[0].toy;
-          if (toyImg && !toyImg._failed && i === 1) useTintFallback = true;
+          if (toyImg && !toyImg._failed && i !== 0) useTintFallback = true;
         }
         if (toyImg && !toyImg._failed) img = toyImg;
       }

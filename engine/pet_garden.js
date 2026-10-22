@@ -2,7 +2,7 @@
 // 🌱 pet_garden.js — Garden Mode
 // Plant seeds in dirt patches, water them to grow instantly,
 // harvest with scythe → food flies to bag → linked to feed mode inventory.
-// HD/Retina canvas enabled. Base image name: base.png
+// HD/Retina canvas enabled. Base image names: base.png, base_2.png
 // ===========================================================
 (function () {
   const canvas = document.getElementById('canvas');
@@ -58,9 +58,12 @@
     return img;
   }
 
-  const petImgs = [
-    createImg('base.png')
-  ];
+  // Characters come from game_config.js (count, art suffix, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', drawFilter: 'none' }];
+
+  const petImgs = PET_CFG.map(c => createImg(`base${c.artSuffix || ''}.png`));
 
   // ===== GROWTH TIMING =====
   const SEC_GROWING = 7;
@@ -554,19 +557,22 @@
     const petW = window.PetArt ? window.PetArt.widthForHeight(petH) : petH * (400 / 450);
     const petY = fenceY - petH - 10;
 
-    [
-      {
-        x: getCanvasW() * 0.5 - petW / 2,
-        idx: 0,
-        filter: 'none',
-      },
-    ].forEach(({ x, idx, filter }) => {
+    // Spread the pets along the fence: 1 pet sits centered, more pets spread
+    // between 22% and 78% of the screen width.
+    const n = PET_CFG.length;
+    PET_CFG.map((c, idx) => ({
+      x: getCanvasW() * (n === 1 ? 0.5 : 0.22 + 0.56 * (idx / (n - 1))) - petW / 2,
+      idx,
+      filter: 'none',
+    })).forEach(({ x, idx, filter }) => {
       let img = petImgs[idx];
       let useFilter = filter;
 
       if (!img || img._failed || !img.complete || img.naturalWidth === 0) {
         img = petImgs[0];
-        useFilter = 'none';
+        useFilter = idx !== 0
+          ? (PET_CFG[idx].drawFilter || 'none')
+          : 'none';
       }
 
       if (img && img.complete && img.naturalWidth > 0 && !img._failed) {

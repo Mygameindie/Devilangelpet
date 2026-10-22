@@ -1,8 +1,9 @@
 // ===========================================================
 // 🩺 DOCTOR MODE
-// Pet shows a sick face. Drag the medicine to heal it.
-// ✅ base_sick.png   — sick face (user provides)
-// ✅ base_healed.png — healed face (user provides)
+// Pets show sick face. Drag the medicine to heal them.
+// ✅ 2 pets
+// ✅ base_sick.png / base_sick_2.png   — sick face (user provides)
+// ✅ base_healed.png / base_healed_2.png — healed face (user provides)
 // ✅ Falls back to base.png if sick/healed images not yet added
 // ===========================================================
 
@@ -40,14 +41,20 @@
     return img;
   }
 
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', xFrac: 0.5, drawFilter: 'none' }];
+
   // Per-pet image sets
-  const imgSets = [
-    {
-      sick:   loadImg('base_sick.png'),
-      healed: loadImg('base_healed.png'),
-      normal: loadImg('base.png'),
-    },
-  ];
+  const imgSets = PET_CFG.map(c => {
+    const sfx = c.artSuffix || '';
+    return {
+      sick:   loadImg(`base_sick${sfx}.png`),
+      healed: loadImg(`base_healed${sfx}.png`),
+      normal: loadImg(`base${sfx}.png`),
+    };
+  });
 
   function getImg(set, key) {
     const img = set[key];
@@ -65,11 +72,13 @@
   let PET_W = window.PetArt ? window.PetArt.widthForHeight(PET_H) : 400;
   if (window.PetArt) window.PetArt.onReady(() => { PET_W = window.PetArt.widthForHeight(PET_H); });
 
-  const pets = [
-    { idx: 0, phase: 'sick', healTimer: 0 },
-  ];
+  const pets = PET_CFG.map((c, i) => ({ idx: i, phase: 'sick', healTimer: 0 }));
 
-  function petX() { return canvas.width * 0.5; }
+  function petX(i) {
+    const c = PET_CFG[i] || {};
+    const xFrac = (c.xFrac != null) ? c.xFrac : (i + 1) / (PET_CFG.length + 1);
+    return canvas.width * xFrac;
+  }
   function petY()   { return groundY - PET_H / 2; }
 
   // ==============================
@@ -145,23 +154,22 @@
 
   function drawPet(pet) {
     const i = pet.idx;
-    const set = imgSets[i];
-    let img;
+    const key = pet.phase === 'healed' ? 'healed' : (pet.phase === 'sick' ? 'sick' : 'normal');
+    let img = getImg(imgSets[i], key);
 
-    if (pet.phase === 'healed') {
-      img = getImg(set, 'healed');
-    } else if (pet.phase === 'sick') {
-      img = getImg(set, 'sick');
-    } else {
-      img = getImg(set, 'normal');
+    // If this pet's art is missing entirely, fall back to pet 1's art and tint it.
+    let needsTint = false;
+    if (!img && i !== 0) {
+      img = getImg(imgSets[0], key);
+      needsTint = true;
     }
-
     if (!img) return;
     if (pet.phase !== "healed" && pet.phase !== "sick") img = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, i) : img);
 
     ctx.save();
+    if (needsTint) ctx.filter = PET_CFG[i].drawFilter || 'none';
     if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(ctx, 'stand', petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H, i);
-    ctx.drawImage(img, petX() - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H);
+    ctx.drawImage(img, petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H);
     if (typeof window.drawOutfitOverlay === 'function') {
       window.drawOutfitOverlay(ctx, 'stand', petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H, i);
     }

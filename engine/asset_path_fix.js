@@ -44,8 +44,7 @@
   function fallbackName(url) {
     const m = POSE.exec(url);
     if (!m) return null;
-    let two = /(?:^|_)2(?:_|$)/.test(m[1]);
-    if (!two && window.PetGender && typeof window.PetGender.get === 'function') two = window.PetGender.get() === 'boy';
+    const two = /(?:^|_)2(?:_|$)/.test(m[1]);
     return two ? 'base_2.png' : 'base.png';
   }
   // ---- A pose = the pet's normal body + that pose's own head ---------------
@@ -132,7 +131,7 @@
         if (!fb || (!plain && failed.split('?')[0].endsWith('/' + fb))) return;
         withHead(failed, fb, url => {
           if (img.src !== failed) return;
-          if (plain && url) img._plainBase = true;   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
+          if (plain && url) { img._plainBase = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
           if (!url && plain) return;           // nothing to build it from
           if (!url) img._fallbackBase = true;
           img.addEventListener('load', () => { img._failed = false; }, { once: true });

@@ -16,13 +16,6 @@
 // - Once you're already wearing separates, they are independent: changing one
 //   does NOT change the other, so you can mix freely (top1 + bottom2).
 // - Dress clears top + bottom; top or bottom clears dress.
-//
-// GENDER: there is ONE pet, and it is a girl or a boy (set in pet_gender.js).
-// The wardrobe it can use is simply OUTFIT_CONFIG.girl or OUTFIT_CONFIG.boy —
-// that is what enforces the boy clothing rules (he has no dress / skirt /
-// top-underwear / one-piece list, so those tabs never appear for him).
-// Flipping the gender at runtime rebuilds the panel and carries the outfit
-// across where the other gender has a matching item ("top1" <-> "top1_2").
 (() => {
   const DEFAULT_COLOR = "Original";
   const COLORS = {
@@ -41,24 +34,56 @@
       { key: "top", label: "Top", z: 120 },
       { key: "bottom", label: "Pants / Skirt", z: 110 },
       { key: "dress", label: "Dress", z: 130 },
-	  { key: "socks", label: "Socks", z: 85 },
+      { key: "socks", label: "Socks", z: 85 },
       { key: "shoes", label: "Shoes", z: 90 },
       { key: "hat", label: "Hat", z: 180 },
     ],
-    girl: {},
-    boy: {},
-    defaults: { girl: {}, boy: {} },
+    pet1: {},
+    defaults: { pet1: {} },
   };
 
   // ---- Helpers --------------------------------------------------------------
   function img(src) {
     const im = new Image();
     im._failed = false;
-    im.onerror = () => { im._failed = true; };
+    im.onerror = () => { im._failed = true; scheduleArtRefresh(); };
+    im.onload = () => { scheduleArtRefresh(); };
     im.src = src; // asset_path_fix.js rewrites bare names to images/<name>
     return im;
   }
 
+
+  // Characters can have different wardrobes (e.g. pet 2 has no hat art). When
+  // an item's PNG finishes loading — or fails — re-check everything once so
+  // missing items disappear from the panel, invalid selections get cleared,
+  // and the button count stays honest for whichever character is active.
+  let artRefreshTimer = 0;
+  function scheduleArtRefresh() {
+    clearTimeout(artRefreshTimer);
+    artRefreshTimer = setTimeout(() => {
+      validateSelections();
+      if (panel && panel.style.display !== "none") renderPanel();
+      updateButtonLabel();
+    }, 60);
+  }
+
+  // An item is available if its art hasn't failed to load. Id 0 ("None") is
+  // always available. Art that is still loading counts as available; if it
+  // later fails, scheduleArtRefresh() hides it.
+  function itemAvailable(it) {
+    if (!it) return false;
+    if (it.id === 0 || it.id === "0") return true;
+    return !!(it.img && !it.img._failed);
+  }
+  function availableItems(p, key) {
+    const cat = (window.dressUpCatalog[p] || {})[key];
+    const out = {};
+    if (!cat) return out;
+    Object.entries(cat.items || {}).forEach(([id, it]) => {
+      if (itemAvailable(it)) out[id] = it;
+    });
+    return out;
+  }
 
   // "top2" -> "Top 2", "top1_2" -> "Top 1", "boxers1_2" -> "Boxers 1"
   function humanize(id) {
@@ -128,32 +153,25 @@
     key: c.key, label: c.label || c.key, z: Number(c.z) || 100, behind: !!c.behind, hangs: !!c.hangs, blows: c.blows,
   }));
 
-  // ---- Gender: which wardrobe this one pet is using -------------------------
-  // "girl" / "boy" from pet_gender.js. The old pet1/pet2 key names still work
-  // so an older outfit_config.js keeps loading (pet1 = girl, pet2 = boy).
-  function gender() {
-    return (window.PetGender && window.PetGender.get()) === "boy" ? "boy" : "girl";
-  }
-  function wardrobe() {
-    const g = gender();
-    return cfg[g] || cfg[g === "boy" ? "pet2" : "pet1"] || {};
-  }
-  function defaultWardrobe() {
-    const d = cfg.defaults || {};
-    const g = gender();
-    return d[g] || d[g === "boy" ? "pet2" : "pet1"] || {};
-  }
+  // Every pet shares the same dress-up system. Pet count comes from
+  // game_config.js; each pet reads its wardrobe from cfg.pet1 / cfg.pet2 / ...
+  // in outfit_config.js (same structure per pet, art suffixed per pet).
+  const NUM_PETS = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length) || 1;
+  const PETS = Array.from({ length: NUM_PETS }, (_, i) => i);
+  const wardrobeFor = p => cfg["pet" + (p + 1)] || {};
+  const defaultsFor = p => (cfg.defaults && cfg.defaults["pet" + (p + 1)]) || {};
 
   function buildCatalog() {
-    const catalog = { 0: {} };
-    cats.forEach(c => { catalog[0][c.key] = emptyCat(c); });
-    const list0 = wardrobe();
-    cats.forEach(c => {
-      const list = list0[c.key];
-      if (!Array.isArray(list)) return;
-      list.forEach(entry => {
-        const it = normItem(entry);
-        if (it) catalog[0][c.key].items[it.id] = {
+    const catalog = {};
+    PETS.forEach(p => { catalog[p] = {}; cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }); });
+    PETS.forEach(p => {
+      const wardrobe = wardrobeFor(p);
+      cats.forEach(c => {
+        const list = wardrobe[c.key];
+        if (!Array.isArray(list)) return;
+        list.forEach(entry => {
+          const it = normItem(entry);
+          if (it) catalog[p][c.key].items[it.id] = {
             id: it.id, label: it.label, z: Number(c.z) || 100, img: img(`${it.prefix}.png`), back: it.back ? img(`${it.back}.png`) : null,
             // Optional extra layers of the same garment (missing files are fine):
             // <name>_over.png drawn over the chest (bra straps), <name>_under.png
@@ -163,36 +181,34 @@
             // dress), stays whole over the chest (stiff), or blows up while falling.
             hangs: it.hangs === undefined ? c.hangs : !!it.hangs,
             stiff: !!it.stiff,
+            blows: it.blows === undefined ? c.blows : it.blows,
             whole: !!it.whole,
             cuffs: !!it.cuffs,
-            blows: it.blows === undefined ? c.blows : it.blows,
           };
+        });
       });
     });
     return catalog;
   }
 
-  function buildDefaults() {
-    const out = { 0: {} };
-    const src = defaultWardrobe();
-    cats.forEach(c => { out[0][c.key] = src[c.key] != null ? src[c.key] : 0; });
+  const defaults = (() => {
+    const out = {};
+    PETS.forEach(p => { out[p] = {}; const src = defaultsFor(p); cats.forEach(c => { out[p][c.key] = src[c.key] != null ? src[c.key] : 0; }); });
     return out;
-  }
-
-  let defaults = buildDefaults();
+  })();
 
   window.dressUpCatalog = buildCatalog();
   if (typeof window.activePetIndex !== "number") window.activePetIndex = 0;
 
   function makeSelected() {
-    return [0].map(p => {
+    return PETS.map(p => {
       const o = {};
       cats.forEach(c => o[c.key] = defaults[p][c.key] != null ? defaults[p][c.key] : 0);
       return o;
     });
   }
   function makeColors() {
-    return [0].map(() => {
+    return PETS.map(() => {
       const o = {};
       cats.forEach(c => o[c.key] = DEFAULT_COLOR);
       return o;
@@ -201,28 +217,46 @@
 
   window.selectedClothes = window.selectedClothes || makeSelected();
   window.clothingColors = window.clothingColors || makeColors();
-  window.currentOutfits = [0];
+  window.currentOutfits = PETS.map(() => 0);
   window.currentOutfit = 0;
 
   function activePet() {
-    return 0;
+    const p = window.activePetIndex;
+    return PETS.includes(p) ? p : 0;
   }
 
-  // Only the categories this gender actually has clothes for. This is what
-  // enforces the boy clothing rules: the boy list has no dress / skirt /
-  // top-underwear / one-piece items, so those tabs simply don't exist for him.
+  // Only show categories this character actually owns clothes for. This is what
+  // enforces the boy clothing rules: character 2 (boy) has no top underwear,
+  // one-piece, dress, or bunnysuit-bow items, so those tabs never appear.
+  // Items whose art is missing don't count either, so a character without a
+  // hat PNG simply has no Hat tab — each character's panel matches its art.
   function catKeys(p = activePet()) {
-    const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
-    return cats.map(c => c.key).filter(k => {
-      const items = catalog[k] && catalog[k].items;
-      return !!items && Object.keys(items).length > 1; // more than just "None"
+    return cats.map(c => c.key).filter(k =>
+      Object.keys(availableItems(p, k)).length > 1 // more than just "None"
+    );
+  }
+
+  // Clear any worn item that this character doesn't actually have (not in its
+  // catalog, or its art failed to load). Keeps each character's outfit
+  // consistent with its own wardrobe after switching characters or presets.
+  function validateSelections() {
+    PETS.forEach(p => {
+      const sc = window.selectedClothes && window.selectedClothes[p];
+      if (!sc) return;
+      const catalog = window.dressUpCatalog[p] || {};
+      cats.forEach(c => {
+        const id = sc[c.key];
+        if (id === 0 || id === "0" || id == null) return;
+        const it = catalog[c.key] && catalog[c.key].items && catalog[c.key].items[id];
+        if (!itemAvailable(it)) sc[c.key] = 0;
+      });
     });
   }
 
   function normalizeState() {
     const sel = makeSelected();
     const cols = makeColors();
-    [0].forEach(p => {
+    PETS.forEach(p => {
       window.selectedClothes[p] = window.selectedClothes[p] || {};
       window.clothingColors[p] = window.clothingColors[p] || {};
       cats.forEach(c => {
@@ -274,13 +308,20 @@
   }
   function applyDressRules(p, category, id) {
     if (id === 0 || id === "0") return;
-    if (category === "dress") {
-      window.selectedClothes[p].top = 0;
-      window.selectedClothes[p].bottom = 0;
+    const sc = window.selectedClothes[p];
+    // Full-body garments (dress, bodysuit) replace the separate top + bottom,
+    // and replace each other (you can't wear a dress and a bodysuit at once).
+    if (category === "dress" || category === "bodysuit") {
+      sc.top = 0;
+      sc.bottom = 0;
+      sc.dress = (category === "dress") ? sc.dress : 0;
+      sc.bodysuit = (category === "bodysuit") ? sc.bodysuit : 0;
       return;
     }
+    // Putting on a separate top/bottom removes any full-body garment.
     if (category === "top" || category === "bottom") {
-      window.selectedClothes[p].dress = 0;
+      sc.dress = 0;
+      sc.bodysuit = 0;
     }
   }
   function applyClothingRules(p, category, id) {
@@ -980,41 +1021,14 @@
 
   function updateButtonLabel() {
     const p = activePet();
-    const count = catKeys(p).map(k => window.selectedClothes[p] && window.selectedClothes[p][k]).filter(v => v !== 0 && v !== "0" && v != null).length;
+    // Count only items this character actually has — a selection whose art is
+    // missing (e.g. a hat this character has no PNG for) doesn't count.
+    const count = catKeys(p).filter(k => {
+      const id = window.selectedClothes[p] && window.selectedClothes[p][k];
+      if (id === 0 || id === "0" || id == null) return false;
+      return itemAvailable(availableItems(p, k)[id]);
+    }).length;
     dressBtn.textContent = `👗 Dress Up (${count} item${count === 1 ? "" : "s"})`;
-  }
-
-  // Art is drawn on a full-size canvas, so a small item (a crop top) looks tiny as a
-  // thumbnail. Swap in a copy cropped to the visible pixels; keeps the original if
-  // the canvas can't be read.
-  const cropCache = {};
-  function cropToContent(src, imgEl) {
-    if (cropCache[src]) { imgEl.src = cropCache[src]; return; }
-    const full = new Image();
-    full.onload = () => {
-      try {
-        const c = document.createElement("canvas");
-        c.width = full.naturalWidth; c.height = full.naturalHeight;
-        const x = c.getContext("2d");
-        x.drawImage(full, 0, 0);
-        const d = x.getImageData(0, 0, c.width, c.height).data;
-        let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
-        for (let y = 0; y < c.height; y++) for (let px = 0; px < c.width; px++) {
-          if (d[(y * c.width + px) * 4 + 3] > 8) {
-            if (px < x0) x0 = px; if (px > x1) x1 = px;
-            if (y < y0) y0 = y; if (y > y1) y1 = y;
-          }
-        }
-        if (x1 < 0) return;
-        const w = x1 - x0 + 1, h = y1 - y0 + 1;
-        const o = document.createElement("canvas");
-        o.width = w; o.height = h;
-        o.getContext("2d").drawImage(c, x0, y0, w, h, 0, 0, w, h);
-        cropCache[src] = o.toDataURL("image/png");
-        imgEl.src = cropCache[src];
-      } catch (e) { /* tainted canvas: keep the full image */ }
-    };
-    full.src = src;
   }
 
   // A clothing item shown as an image thumbnail (falls back to text/emoji).
@@ -1062,6 +1076,39 @@
     }
   }
 
+  // Art is drawn on a full-size canvas, so a small item (a crop top) looks tiny as a
+  // thumbnail. Swap in a copy cropped to the visible pixels; keeps the original if
+  // the canvas can't be read.
+  const cropCache = {};
+  function cropToContent(src, imgEl) {
+    if (cropCache[src]) { imgEl.src = cropCache[src]; return; }
+    const full = new Image();
+    full.onload = () => {
+      try {
+        const c = document.createElement("canvas");
+        c.width = full.naturalWidth; c.height = full.naturalHeight;
+        const x = c.getContext("2d");
+        x.drawImage(full, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data;
+        let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+        for (let y = 0; y < c.height; y++) for (let px = 0; px < c.width; px++) {
+          if (d[(y * c.width + px) * 4 + 3] > 8) {
+            if (px < x0) x0 = px; if (px > x1) x1 = px;
+            if (y < y0) y0 = y; if (y > y1) y1 = y;
+          }
+        }
+        if (x1 < 0) return;
+        const w = x1 - x0 + 1, h = y1 - y0 + 1;
+        const o = document.createElement("canvas");
+        o.width = w; o.height = h;
+        o.getContext("2d").drawImage(c, x0, y0, w, h, 0, 0, w, h);
+        cropCache[src] = o.toDataURL("image/png");
+        imgEl.src = cropCache[src];
+      } catch (e) { /* tainted canvas: keep the full image */ }
+    };
+    full.src = src;
+  }
+
   function renderPanel() {
     const p = activePet();
     const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
@@ -1079,18 +1126,16 @@
     title.appendChild(close);
     panel.appendChild(title);
 
-    // Girl / Boy switch (hide it with showSwitchButton: false in pet_gender.js)
-    if (window.PetGender && window.PetGender.canSwitch()) {
-      const genderRow = document.createElement("div");
-      genderRow.style.cssText = "display:flex;gap:6px;margin-bottom:8px;";
-      window.PetGender.genders().forEach(g => {
-        const b = btn(`${window.PetGender.emoji(g)} ${window.PetGender.label(g)}`);
-        if (g === gender()) b.style.cssText += "background:#fff7e6;border:2px solid #f59e0b;font-weight:700;";
-        b.onclick = () => { window.PetGender.set(g); };
-        genderRow.appendChild(b);
-      });
-      panel.appendChild(genderRow);
-    }
+    // Which character to dress (both share the same wardrobe system)
+    const petRow = document.createElement("div");
+    petRow.style.cssText = "display:flex;gap:6px;margin-bottom:8px;";
+    PETS.forEach(pi => {
+      const b = btn(`🐾 Character ${pi + 1}`);
+      if (pi === p) b.style.cssText += "background:#fff7e6;border:2px solid #f59e0b;font-weight:700;";
+      b.onclick = () => { if (typeof window.setActivePet === "function") window.setActivePet(pi); };
+      petRow.appendChild(b);
+    });
+    panel.appendChild(petRow);
 
     // Category tabs
     const row = document.createElement("div");
@@ -1157,64 +1202,12 @@
     renderPanel();
   };
 
-  // ---- Gender switching -----------------------------------------------------
-  // One pet, two wardrobes. When the gender flips, rebuild the catalog from
-  // the other list and carry the outfit across: an item with a matching id in
-  // the new wardrobe stays on ("top1" -> "top1_2"), anything that gender does
-  // not have (a dress on a boy) comes off.
-  const UNDERWEAR_KEYS = ["topUnderwear", "bottomUnderwear", "onepieceUnderwear"];
-
-  function carryOutfitAcross() {
-    const sc = window.selectedClothes[0] || {};
-    const catalog = window.dressUpCatalog[0] || {};
-    const fallback = defaults[0] || {};
-    const before = { ...sc };
-    cats.forEach(c => {
-      const items = (catalog[c.key] && catalog[c.key].items) || {};
-      const id = sc[c.key];
-      if (id === 0 || id === "0" || id == null) {
-        sc[c.key] = 0;
-        return;
-      }
-      const translated = window.PetGender ? window.PetGender.itemId(id) : id;
-      if (items[translated]) sc[c.key] = translated;
-      else if (items[id]) sc[c.key] = id;
-      else sc[c.key] = items[fallback[c.key]] ? fallback[c.key] : 0;
-    });
-
-    // Underwear is the one thing we don't want to silently drop: if the new
-    // gender has no version of what was worn (a girl's one-piece on a boy),
-    // put on that gender's default underwear instead of leaving the pet bare.
-    const wore = UNDERWEAR_KEYS.some(k => before[k] && before[k] !== "0");
-    const wears = UNDERWEAR_KEYS.some(k => sc[k] && sc[k] !== "0");
-    if (wore && !wears) {
-      UNDERWEAR_KEYS.forEach(k => {
-        const items = (catalog[k] && catalog[k].items) || {};
-        const d = fallback[k];
-        if (d && items[d]) sc[k] = d;
-      });
-    }
-  }
-
-  function rebuildForGender() {
-    window.dressUpCatalog = buildCatalog();
-    defaults = buildDefaults();
-    carryOutfitAcross();
-    normalizeState();
-    const keys = catKeys();
-    if (!keys.includes(selectedCategory)) selectedCategory = keys[0] || (cats[0] && cats[0].key);
-    renderPanel();
-    updateButtonLabel();
-  }
-
-  // Also exposed so other code can force a refresh after editing the config.
-  window.rebuildDressUpForGender = rebuildForGender;
-
   // ---- Public draw + lifecycle API (used by every mode) ---------------------
   // Lets other systems (e.g. outfit_presets.js) refresh the Dress Up panel and
   // button after they change window.selectedClothes / window.clothingColors.
   window.refreshDressUpUI = function () {
     normalizeState();
+    validateSelections();
     renderPanel();
     updateButtonLabel();
   };
@@ -1332,18 +1325,16 @@
     updateButtonLabel();
   };
 
-  window.setActivePet = function () {
-    window.activePetIndex = 0;
+  window.setActivePet = function (petIndex) {
+    window.activePetIndex = PETS.includes(petIndex) ? petIndex : 0;
+    validateSelections();
     renderPanel();
     updateButtonLabel();
   };
 
   // ---- Init -----------------------------------------------------------------
   normalizeState();
+  validateSelections();
   renderPanel();
   updateButtonLabel();
-
-  if (window.PetGender && typeof window.PetGender.onChange === "function") {
-    window.PetGender.onChange(rebuildForGender);
-  }
 })();

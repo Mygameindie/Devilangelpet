@@ -27,13 +27,21 @@
     return img;
   }
 
-  const baseSets = [
-    { normal: createImg("base.png"), hurt: createImg("base_disgust.png") },
-  ];
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  // Per-pet art: base.png / base_disgust.png plus the pet's artSuffix
+  // (e.g. base_2.png / base_disgust_2.png). Missing art falls back to pet1 + tint.
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: "", xFrac: 0.5, drawFilter: "none" }];
 
-  const pets = [
-    { x: 0, y: 0, w: 400, h: 450, hurtUntil: 0, recoilUntil: 0, wind: 0, nextWindTrollAt: 0, drawFilter: "none" },
-  ];
+  const baseSets = PET_CFG.map(c => {
+    const sfx = c.artSuffix || "";
+    return { normal: createImg(`base${sfx}.png`), hurt: createImg(`base_disgust${sfx}.png`) };
+  });
+
+  const pets = PET_CFG.map(c => (
+    { x: 0, y: 0, w: 400, h: 450, hurtUntil: 0, recoilUntil: 0, wind: 0, nextWindTrollAt: 0, drawFilter: c.drawFilter || "none" }
+  ));
 
   // Match the main screen: derive width from the base image's real aspect ratio.
   function syncPetWidths() {
@@ -47,8 +55,12 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     groundY = canvas.height - groundHeight;
-    pets[0].x = canvas.width * 0.5 - pets[0].w / 2;
-    pets.forEach(p => { p.y = groundY - 500; });
+    pets.forEach((p, i) => {
+      const c = PET_CFG[i] || {};
+      const xFrac = (c.xFrac != null) ? c.xFrac : (i + 1) / (PET_CFG.length + 1);
+      p.x = canvas.width * xFrac - p.w / 2;
+      p.y = groundY - 500;
+    });
   }
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
@@ -323,9 +335,7 @@
   // ===========================================================
   // 🎯 Pixel-perfect hit test (opaque pixels only)
   // ===========================================================
-  const alphaMasks = [
-    { data: null, w: 0, h: 0 },
-  ];
+  const alphaMasks = PET_CFG.map(() => ({ data: null, w: 0, h: 0 }));
   const ALPHA_THRESHOLD = 10;
 
   function rebuildAlphaMask(img, idx) {
@@ -580,7 +590,7 @@
       if (!img || img._failed) {
         set = baseSets[0];
         img = wantHurt ? set.hurt : set.normal;
-        useTintFallback = (i === 1);
+        useTintFallback = (i !== 0);
       }
 
       if (img && !img._failed && img.complete && img.naturalWidth > 0) {

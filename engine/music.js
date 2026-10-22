@@ -12,10 +12,16 @@
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
+  // Characters come from game_config.js (count, art suffix, position).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: "", xFrac: 0.5 }];
+  const NUM_PETS = PET_CFG.length;
+
   // =========================
-  // Active pet selection (tap pet 1 / 2)
+  // Active pet selection (tap a pet)
   // =========================
-  let _lastFits = [null];
+  let _lastFits = PET_CFG.map(() => null);
   function _getPointerPos(e) {
     const rect = canvas.getBoundingClientRect();
     const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
@@ -25,7 +31,8 @@
   }
   function _selectPetAt(e) {
     const p = _getPointerPos(e);
-    for (let i = _lastFits.length - 1; i >= 0; i--) {
+    // Check top-most first (later pets are drawn after earlier ones)
+    for (let i = NUM_PETS - 1; i >= 0; i--) {
       const t = _lastFits[i];
       if (!t) continue;
       if (p.x >= t.x && p.x <= t.x + t.w && p.y >= t.y && p.y <= t.y + t.h) {
@@ -53,15 +60,16 @@
   // =========================
   // Images (per pet)
   // =========================
-  const petImgs = [
-    { a: new Image(), b: new Image(), current: null, toggle: false }, // pet1
-  ];
-
-  // Pet 1 dance frames: base.png and base_music2.png (head_music.png on the normal body)
-  petImgs[0].a.src = "base.png";   // normal picture, also shown before/after the music
-  petImgs[0].b.src = "base_music2.png";
-
-  petImgs[0].current = petImgs[0].a;
+  // Dance frames per pet: the normal picture (base.png) and base_music2.png plus
+  // the pet's artSuffix (e.g. base_2.png / base_music2_2.png); a missing
+  // base_music2 is the normal body with head_music.png. If missing, falls back to pet1 frames.
+  const petImgs = PET_CFG.map(c => {
+    const p = { a: new Image(), b: new Image(), current: null, toggle: false };
+    p.a.src = `base${c.artSuffix || ""}.png`;   // normal picture, also shown before/after the music
+    p.b.src = `base_music2${c.artSuffix || ""}.png`;
+    p.current = p.a;
+    return p;
+  });
 
   let rafId = 0;
   let danceInterval = null;
@@ -75,7 +83,9 @@
     const h = 450;
     // Match the main screen: derive width from the base image's real aspect ratio.
     const w = window.PetArt ? window.PetArt.widthForHeight(h) : 400;
-    const x = canvas.width * 0.5 - w / 2;
+    const c = PET_CFG[idx] || {};
+    const xFrac = (c.xFrac != null) ? c.xFrac : (idx + 1) / (NUM_PETS + 1);
+    const x = canvas.width * xFrac - w / 2;
     const y = canvas.height - h - 80;
     return { x, y, w, h };
   }
@@ -83,7 +93,8 @@
   function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    for (let i = 0; i < petImgs.length; i++) {
+    for (let i = 0; i < NUM_PETS; i++) {
+      // Each pet can have its own frames; if a pet's frames are missing, fallback to pet1.
       let img = petImgs[i].current;
       if (!_imgOk(img)) img = petImgs[0].current;
       if (!_imgOk(img)) continue;
@@ -107,7 +118,7 @@
     clearInterval(danceInterval);
 
     danceInterval = setInterval(() => {
-      for (let i = 0; i < petImgs.length; i++) {
+      for (let i = 0; i < NUM_PETS; i++) {
         const p = petImgs[i];
 
         // If this pet's B frame is missing/broken, keep A
@@ -127,7 +138,7 @@
     clearInterval(danceInterval);
     danceInterval = null;
 
-    for (let i = 0; i < petImgs.length; i++) {
+    for (let i = 0; i < NUM_PETS; i++) {
       petImgs[i].toggle = false;
       petImgs[i].current = petImgs[i].a;
     }
@@ -356,9 +367,9 @@
     startProgress();
 
     // ✅ Auto-play immediately
-    // Karaoke boosts happiness
+    // Karaoke boosts happiness for every pet
     if (window.PetStats) {
-      window.PetStats.karaoke(0);
+      for (let i = 0; i < NUM_PETS; i++) window.PetStats.karaoke(i);
     }
     try {
       await mediaPlayer.play();

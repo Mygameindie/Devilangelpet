@@ -4,8 +4,11 @@
 // Persists to localStorage. Provides global API for all modes.
 // ===========================================================
 (() => {
-  const SAVE_KEY = "purelilypet_save";
-  const NUM_PETS = 1;
+  // Pet count and save key come from game_config.js. Every character uses the
+  // exact same stats system (same defaults, same decay rates, same effects).
+  const GAME = window.GAME_CONFIG || {};
+  const SAVE_KEY = GAME.saveKey || "purelilypet_save";
+  const NUM_PETS = (GAME.pets && GAME.pets.length) || 1;
 
   // Stat decay rates (points lost per second)
   const DECAY = {
@@ -83,10 +86,10 @@
     for (let i = 0; i < NUM_PETS; i++) {
       const s = petStats[i];
       const isSleeping = Array.isArray(window._petsSleeping) && window._petsSleeping[i];
-      s.shy = clamp(s.shy - DECAY.shy * dt);
       s.hunger = clamp(s.hunger - DECAY.hunger * dt);
       s.happiness = clamp(s.happiness - DECAY.happiness * dt);
       s.cleanliness = clamp(s.cleanliness - DECAY.cleanliness * dt);
+      s.shy = clamp(s.shy - DECAY.shy * dt);
       if (!isSleeping) {
         s.energy = clamp(s.energy - DECAY.energy * dt);
       }
@@ -99,7 +102,7 @@
   function doSave() {
     writeSave({
       pets: petStats.map(s => ({ ...s })),
-      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : [0],
+      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : new Array(NUM_PETS).fill(0),
       muted,
       gardenInventory: { ...gardenInventory },
       savedAt: Date.now(),
@@ -313,14 +316,24 @@
     save() { doSave(); },
   };
 
+  buildStatsUI();
+  updateUI();
+  applyMute();
+
+  setInterval(tick, 500);
+  setInterval(doSave, 10000);
+  window.addEventListener("beforeunload", doSave);
+
   // ===========================================================
-  // 🙂 FACES — which head the pet wears (head_<name>.png in images/parts/;
-  // head_<name>_2.png for character 2). A pet whose Shy stat is up wears
-  // head_shy.png (head_shy_1.png while a toy touches it). What you do to the pet sets a face
-  // for a few seconds, so it is still there when you come back to normal
-  // mode: fed something it likes -> happy, disliked / trolled -> disgust,
-  // medicine -> heal, karaoke -> music, shower -> shower. A pet with any stat
-  // under 20 is sick. window.PetFace.set(i, name, ms) sets one by hand.
+  // 🙂 FACES — which head a pet wears (head_<name>.png in images/parts/;
+  // head_<name>_2.png for character 2, using the artSuffix in game_config.js).
+  // A pet whose Shy stat is up wears head_shy.png (head_shy_1.png while a toy
+  // touches it). What you do to the pet sets a face for a few seconds, so it is
+  // still there when you come back to normal mode: fed something it likes ->
+  // happy, disliked / trolled -> disgust, medicine -> heal, karaoke -> music,
+  // shower -> shower. A pet with any stat under 20 is sick.
+  // window.PetFace.set(i, name, ms) sets one by hand. A head that has no
+  // picture for a character is simply skipped: that character keeps its head.
   // ===========================================================
   const faceNow = [];
   window.PetFace = {
@@ -339,7 +352,7 @@
   // (head_shy.png, or head_shy_1.png while a toy touches it), so a mode only
   // has to pass the picture it is about to draw through it. Special pose
   // pictures (base_happy, base_bath2 ...) are left alone: only the plain
-  // base.png / base_2.png (and the standing frames of them) get the shy head.
+  // base.png / base_2.png get the shy head.
   const shyCache = new Map();
   window.PetFace.shyImg = function (img, i) {
     try {
@@ -352,7 +365,10 @@
       if (!img._plainBase && !/(?:^|\/)base(_2)?\.png(?:\?.*)?$/i.test(img.src)) return img;
       // a toy touching it, or wind blowing on it (trolling blower) -> head_shy_1
       const toy = !!(window._petToy && window._petToy[i || 0]) || wind;
-      const suffix = (window.PetGender && typeof window.PetGender.suffix === 'function') ? window.PetGender.suffix() : '';
+      // The head follows the body being drawn: base_2.png (or a body built from
+      // the _2 parts) gets the _2 head; character 2 drawing character 1's art
+      // (no _2 art yet) gets the plain head.
+      const suffix = img._plainBase ? (img._two ? '_2' : '') : (/base_2\.png/i.test(img.src) ? '_2' : '');
       const key = img.src + '|' + (toy ? 'shy_1' : 'shy') + suffix;
       let e = shyCache.get(key);
       if (!e) {
@@ -424,19 +440,13 @@
   const confBtn = document.getElementById("confidence-btn");
   if (confBtn) {
     confBtn.addEventListener("click", () => {
-      for (let i = 0; i < NUM_PETS; i++) window.PetStats.confidence(i);
-      if (window.PetFace) window.PetFace.set(0, "happy", 2000);
+      for (let i = 0; i < NUM_PETS; i++) {
+        window.PetStats.confidence(i);
+        window.PetFace.set(i, "happy", 2000);
+      }
       updateUI();
       const hint = document.getElementById("hint-text") || document.getElementById("hint");
       if (hint) hint.textContent = "Confidence boosted!";
     });
   }
-
-  buildStatsUI();
-  updateUI();
-  applyMute();
-
-  setInterval(tick, 500);
-  setInterval(doSave, 10000);
-  window.addEventListener("beforeunload", doSave);
 })();
