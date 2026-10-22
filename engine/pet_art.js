@@ -9,6 +9,17 @@
 //
 // This module preloads the base sprite once and exposes its true aspect ratio
 // so every mode can size the pet identically to the main screen.
+// Stacking order of the characters (game_config.js: pets[i].z, higher = in
+// front; default = its position in the list, so a later pet is drawn over an
+// earlier one). PET_DRAW_ORDER lists pet indexes back to front (draw in this
+// order), PET_FRONT_FIRST front to back (hit tests: the pet on top wins).
+(function () {
+  const cfg = (window.GAME_CONFIG && window.GAME_CONFIG.pets) || [{}];
+  const z = i => (cfg[i] && cfg[i].z != null) ? cfg[i].z : i;
+  window.PET_DRAW_ORDER = cfg.map((_, i) => i).sort((a, b) => z(a) - z(b) || a - b);
+  window.PET_FRONT_FIRST = window.PET_DRAW_ORDER.slice().reverse();
+})();
+
 (function () {
   const FALLBACK_ASPECT = 400 / 450; // matches the old hardcoded ratio
 

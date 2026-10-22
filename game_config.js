@@ -12,6 +12,9 @@
 //   xFrac     : horizontal start position, 0..1 of screen width.
 //   drawFilter: CSS filter used when this pet falls back to
 //               pet 1's art ("none" for no tint).
+//   z         : (optional) stacking order, higher = in front of the others.
+//               Default: later in this list = in front. Here the girl is
+//               in front of the boy.
 //   noParts   : (optional) ragdoll part names this character never has
 //               (e.g. ["chest_L", "chest_R"]); they are not drawn at all.
 //
@@ -26,9 +29,9 @@ window.GAME_CONFIG = {
   saveKey: "purelilypet_save",
   posesFromHeads: true,
   pets: [
-    { artSuffix: "",   xFrac: 0.35, drawFilter: "none" },
+    { artSuffix: "",   xFrac: 0.35, drawFilter: "none", z: 2 },
     // noParts: ragdoll parts this character never has (the boy has no chest),
     // even when character 1's picture is borrowed because his own is missing.
-    { artSuffix: "_2", xFrac: 0.65, drawFilter: "hue-rotate(140deg) saturate(1.2)", noParts: ["chest_L", "chest_R"] },
+    { artSuffix: "_2", xFrac: 0.65, drawFilter: "hue-rotate(140deg) saturate(1.2)", z: 1, noParts: ["chest_L", "chest_R"] },
   ],
 };
