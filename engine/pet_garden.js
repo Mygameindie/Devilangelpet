@@ -2,7 +2,7 @@
 // 🌱 pet_garden.js — Garden Mode
 // Plant seeds in dirt patches, water them to grow instantly,
 // harvest with scythe → food flies to bag → linked to feed mode inventory.
-// HD/Retina canvas enabled. Base image names: base.png, base_2.png
+// HD/Retina canvas enabled. Pet picture names: base.png, base_2.png (built from parts + head, see posesFromHeads)
 // ===========================================================
 (function () {
   const canvas = document.getElementById('canvas');

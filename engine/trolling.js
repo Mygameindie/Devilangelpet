@@ -34,7 +34,7 @@
     ? window.GAME_CONFIG.pets
     : [{ artSuffix: "", xFrac: 0.5, drawFilter: "none" }];
 
-  const baseSets = PET_CFG.map(c => {
+  const headSets = PET_CFG.map(c => {
     const sfx = c.artSuffix || "";
     return { normal: createImg(`base${sfx}.png`), hurt: createImg(`base_disgust${sfx}.png`) };
   });
@@ -353,7 +353,7 @@
     }
   }
 
-  baseSets.forEach((set, i) => {
+  headSets.forEach((set, i) => {
     const img = set && set.normal;
     if (!img) return;
     img.addEventListener("load", () => rebuildAlphaMask(img, i));
@@ -584,11 +584,11 @@
       const recoil = (pet.recoilUntil && now < pet.recoilUntil) ? 10 : 0;
       const wantHurt = (pet.hurtUntil && now < pet.hurtUntil);
 
-      let set = baseSets[i] || baseSets[0];
+      let set = headSets[i] || headSets[0];
       let img = wantHurt ? set.hurt : set.normal;
       let useTintFallback = false;
       if (!img || img._failed) {
-        set = baseSets[0];
+        set = headSets[0];
         img = wantHurt ? set.hurt : set.normal;
         useTintFallback = (i !== 0);
       }

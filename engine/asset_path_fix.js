@@ -46,7 +46,7 @@
   // vanished. So a missing base_<anything>.png loads the pet's own base.png
   // (base_2.png for character 2 / the boy) into the same image instead, and
   // counts as loaded. Real pose art, when it exists, is used as before.
-  // The image gets _fallbackBase = true, for code that needs to know.
+  // The image gets _fallbackHead = true, for code that needs to know.
   const POSE = /(?:^|\/)base_([^/]+)\.png(?:\?.*)?$/i;
   function fallbackName(url) {
     const m = POSE.exec(url);
@@ -124,9 +124,9 @@
     desc.set.call(head, headUrl);
   }
 
-  function armBaseFallback(img, url) {
-    if (img.__baseFallbackArmed || typeof url !== 'string' || !(POSE.test(url) || BASE.test(url))) return;
-    img.__baseFallbackArmed = true;
+  function armHeadFallback(img, url) {
+    if (img.__headFallbackArmed || typeof url !== 'string' || !(POSE.test(url) || BASE.test(url))) return;
+    img.__headFallbackArmed = true;
     img.addEventListener('error', () => {
       const failed = img.src;
       // Let any other fallback (e.g. the boy/girl art switch) go first: only
@@ -138,9 +138,9 @@
         if (!fb || (!plain && failed.split('?')[0].endsWith('/' + fb))) return;
         withHead(failed, fb, url => {
           if (img.src !== failed) return;
-          if (plain && url) { img._plainBase = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
+          if (plain && url) { img._plainHead = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
           if (!url && plain) return;           // nothing to build it from
-          if (!url) img._fallbackBase = true;
+          if (!url) img._fallbackHead = true;
           img.addEventListener('load', () => { img._failed = false; }, { once: true });
           desc.set.call(img, url || IMAGE_DIR + fb);
         });
@@ -156,7 +156,7 @@
     withHead(url, fb, blob => {
       if (img._poseUrl !== url) return;
       if (blob) {
-        if (plain) { img._plainBase = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg
+        if (plain) { img._plainHead = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg
         img.addEventListener('load', () => { img._failed = false; }, { once: true });
         desc.set.call(img, blob);
       } else {
@@ -177,7 +177,7 @@
         poseFromHead(this, fixed);
         return;
       }
-      armBaseFallback(this, fixed);
+      armHeadFallback(this, fixed);
       return desc.set.call(this, fixed);
     },
   });

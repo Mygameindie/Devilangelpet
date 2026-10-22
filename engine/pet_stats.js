@@ -362,13 +362,13 @@
       const face = window.PetFace.get(i);
       const wind = !!(window.ClothWind && window.ClothWind.get(i || 0) > 0);
       if (face !== 'shy' && !(wind && face !== 'sick')) return img;
-      if (!img._plainBase && !/(?:^|\/)base(_2)?\.png(?:\?.*)?$/i.test(img.src)) return img;
+      if (!img._plainHead && !/(?:^|\/)base(_2)?\.png(?:\?.*)?$/i.test(img.src)) return img;
       // a toy touching it, or wind blowing on it (trolling blower) -> head_shy_1
       const toy = !!(window._petToy && window._petToy[i || 0]) || wind;
       // The head follows the body being drawn: base_2.png (or a body built from
       // the _2 parts) gets the _2 head; character 2 drawing character 1's art
       // (no _2 art yet) gets the plain head.
-      const suffix = img._plainBase ? (img._two ? '_2' : '') : (/base_2\.png/i.test(img.src) ? '_2' : '');
+      const suffix = img._plainHead ? (img._two ? '_2' : '') : (/base_2\.png/i.test(img.src) ? '_2' : '');
       const key = img.src + '|' + (toy ? 'shy_1' : 'shy') + suffix;
       let e = shyCache.get(key);
       if (!e) {
@@ -392,7 +392,7 @@
           } catch (_) { /* pixels unreadable (file:// page) */ }
         };
         head.onload = () => {
-          if (!img._plainBase) return paint(null);
+          if (!img._plainHead) return paint(null);
           const cfg = window.RAGDOLL_CONFIG;
           const names = ((cfg && cfg.parts) || []).map(q => q.file).filter(n => n !== 'head');
           const list = names.length ? names : ['back_hair', 'wing_L', 'wing_R', 'back_tail', 'leg_L', 'leg_R', 'arm_L', 'arm_R', 'body', 'chest_L', 'chest_R'];
