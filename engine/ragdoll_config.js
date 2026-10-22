@@ -48,8 +48,8 @@
     CR: { x: 469, y: 676, r: 15, m: 0.4, k: 0.12, anchor: 'torso', max: 26, maxX: 7, gravity: 0.35 },
     Hr: { x: 425, y: 950, r: 20, m: 0.8, k: 0.03, anchor: 'head',  max: 400, gravity: 4 },   // end of the back hair: hangs down when the pet is held
     Tt: { x: 425, y: 1015, r: 8, m: 0.5, k: 0.07, anchor: 'torso', max: 400 },  // tip of the tail
-    Wl: { x: 250, y: 520, r: 12, m: 0.5, k: 0.10, anchor: 'torso', max: 400, gravity: 0.8 },  // tip of the left wing (wing_L)
-    Wr: { x: 600, y: 520, r: 12, m: 0.5, k: 0.10, anchor: 'torso', max: 400, gravity: 0.8 },  // tip of the right wing (wing_R)
+    Wl: { x: 250, y: 720, r: 12, m: 0.5, k: 0.10, anchor: 'torso', max: 400, gravity: 0.8 },  // tip of the left wing (wing_L)
+    Wr: { x: 600, y: 720, r: 12, m: 0.5, k: 0.10, anchor: 'torso', max: 400, gravity: 0.8 },  // tip of the right wing (wing_R)
   };
 
   // Bones that never change length. The torso entries make the neck, shoulders,
