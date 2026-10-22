@@ -69,7 +69,7 @@
   function partsBody(two, cb) {
     const cfg = window.RAGDOLL_CONFIG;
     const names = ((cfg && cfg.parts) || []).map(q => q.file).filter(n => n !== 'head');
-    const list = names.length ? names : ['back_hair', 'back_wings', 'back_tail', 'leg_L', 'leg_R', 'arm_L', 'arm_R', 'body', 'chest_L', 'chest_R'];
+    const list = names.length ? names : ['back_hair', 'wing_L', 'wing_R', 'back_tail', 'leg_L', 'leg_R', 'arm_L', 'arm_R', 'body', 'chest_L', 'chest_R'];
     const imgs = {};
     let left = list.length;
     const done = () => { if (--left === 0) cb(list.map(n => imgs[n]).filter(Boolean), !!imgs.body); };
