@@ -28,6 +28,9 @@
 window.GAME_CONFIG = {
   saveKey: "purelilypet_save",
   posesFromHeads: true,
+  // true = the character you pick comes in front of the other one (z below is
+  // only the starting order). false = z is a fixed stacking order.
+  focusToFront: true,
   pets: [
     { artSuffix: "",   xFrac: 0.35, drawFilter: "none", z: 2 },
     // noParts: ragdoll parts this character never has (the boy has no chest),

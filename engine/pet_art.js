@@ -18,6 +18,19 @@
   const z = i => (cfg[i] && cfg[i].z != null) ? cfg[i].z : i;
   window.PET_DRAW_ORDER = cfg.map((_, i) => i).sort((a, b) => z(a) - z(b) || a - b);
   window.PET_FRONT_FIRST = window.PET_DRAW_ORDER.slice().reverse();
+
+  // focusToFront (game_config.js): the character you pick (press on it, tap it,
+  // choose it in Dress Up) comes in front of the others and stays there. Every
+  // mode already calls setActivePet(i) when one is chosen, which calls this.
+  // The two lists are changed in place, so every mode sees the new order.
+  window.bringPetToFront = function (i) {
+    if (!window.GAME_CONFIG || !window.GAME_CONFIG.focusToFront) return;
+    const back = window.PET_DRAW_ORDER, front = window.PET_FRONT_FIRST;
+    const a = back.indexOf(i);
+    if (a < 0 || a === back.length - 1) return;
+    back.splice(a, 1); back.push(i);
+    front.splice(front.indexOf(i), 1); front.unshift(i);
+  };
 })();
 
 (function () {
