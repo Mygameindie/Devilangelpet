@@ -53,7 +53,7 @@ looks like a different character.
 
 In normal mode a character is a skeleton instead of a flat picture when every
 required body part exists in `images/parts/` (`head`, `body`, `arm_L`, `arm_R`,
-`leg_L`, `leg_R`; optional `chest_L/R`, `back_hair`, `wing_L/R`, `back_tail`;
+`leg_L`, `leg_R`; optional `chest_L/R`, `back_hair`, `wing_L/R`, `tail`;
 character 2 adds `_2`, e.g. `head_2.png`). Pick it up by a hand and it hangs by
 that hand, throw it and it tumbles limp, then gets back up. A character without
 a full set keeps its normal sprite. Turn it off with `ragdoll: false` in
