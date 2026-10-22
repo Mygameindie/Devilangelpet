@@ -18,6 +18,13 @@
     configurable: false,
   });
 
+  // posesFromHeads (game_config.js): the game has no whole-body pictures
+  // (base.png, base_sick.png, base_happy.png, base_music2.png, base_bath2.png,
+  // base_1.png ...). Every pose is the standing body built from images/parts/
+  // plus that pose's head (head_sick.png, head_happy.png, head_music.png,
+  // head_shower.png, head_1.png ...), so those files are not even requested.
+  const FROM_HEADS = !!(window.GAME_CONFIG && window.GAME_CONFIG.posesFromHeads);
+
   function shouldPrefix(value) {
     if (typeof value !== 'string') return false;
     const src = value.trim();
@@ -89,7 +96,7 @@
     const key = fb + '+' + headUrl;
     if (composed.has(key)) return cb(composed.get(key));
     const body = new Image(), head = new Image();
-    let left = 2, bodyOk = true, headOk = true;
+    let left = FROM_HEADS ? 1 : 2, bodyOk = !FROM_HEADS, headOk = true;
     const finish = url => { composed.set(key, url); cb(url); };
     const paint = (layers, cutHead) => {
       try {
@@ -113,7 +120,7 @@
     body.onload = done; head.onload = done;
     body.onerror = () => { bodyOk = false; done(); };
     head.onerror = () => { headOk = false; done(); };
-    desc.set.call(body, IMAGE_DIR + fb);
+    if (!FROM_HEADS) desc.set.call(body, IMAGE_DIR + fb);
     desc.set.call(head, headUrl);
   }
 
@@ -141,12 +148,35 @@
     });
   }
 
+  // posesFromHeads: build the picture from parts + head instead of loading it.
+  function poseFromHead(img, url) {
+    img._poseUrl = url;
+    const plain = BASE.exec(url);
+    const fb = plain ? (plain[1] ? 'base_2.png' : 'base.png') : fallbackName(url);
+    withHead(url, fb, blob => {
+      if (img._poseUrl !== url) return;
+      if (blob) {
+        if (plain) { img._plainBase = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg
+        img.addEventListener('load', () => { img._failed = false; }, { once: true });
+        desc.set.call(img, blob);
+      } else {
+        // No parts / head for it (e.g. character 2 has no _2 art yet): report
+        // it as missing so the mode falls back to character 1's picture.
+        img.dispatchEvent(new Event('error'));
+      }
+    });
+  }
+
   Object.defineProperty(HTMLImageElement.prototype, 'src', {
     configurable: true,
     enumerable: desc.enumerable,
     get: desc.get,
     set(value) {
       const fixed = shouldPrefix(value) ? IMAGE_DIR + value : value;
+      if (FROM_HEADS && typeof fixed === 'string' && (POSE.test(fixed) || BASE.test(fixed))) {
+        poseFromHead(this, fixed);
+        return;
+      }
       armBaseFallback(this, fixed);
       return desc.set.call(this, fixed);
     },
