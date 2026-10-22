@@ -1,5 +1,5 @@
 // ===========================================================
-// 🐾 pet_script.js — Base + Button Outfit System (SINGLE IIFE)
+// 🐾 pet_script.js — Head + Button Outfit System (SINGLE IIFE)
 // ===========================================================
 (function () {
   const canvas = document.getElementById('canvas');
@@ -30,7 +30,7 @@
   // Per-pet base sets.
   // Each pet's art uses its config artSuffix: "" -> base.png, "_2" -> base_2.png.
   // If missing, we fall back to pet1 art and apply the pet's drawFilter so it is still visually distinct.
-  function loadBaseSet(suffix) {
+  function loadHeadSet(suffix) {
     return {
       stand: createImg(`base${suffix}.png`),
       fall: createImg(`base${suffix}.png`),
@@ -44,8 +44,8 @@
     };
   }
 
-  // === Base images (per pet) ===
-  const baseSets = PET_CFG.map(c => loadBaseSet(c.artSuffix || ''));
+  // === Head images (per pet) ===
+  const headSets = PET_CFG.map(c => loadHeadSet(c.artSuffix || ''));
 
   // NOTE: Do NOT create a clothes button here.
   // outfit_system.js creates ONE global button and keeps outfit state in window.currentOutfit.
@@ -97,7 +97,7 @@
   // at the art's true proportions AND at the same size. Height stays the display
   // size; width is derived from the image's natural dimensions once it loads.
   function syncPetAspect() {
-    const img = baseSets[0].stand;
+    const img = headSets[0].stand;
     if (!img || img._failed || !img.naturalWidth || !img.naturalHeight) return;
     const aspect = img.naturalWidth / img.naturalHeight;
     pets.forEach(pet => {
@@ -109,9 +109,9 @@
     });
   }
 
-  const baseImg = baseSets[0].stand;
-  if (baseImg && baseImg.complete && baseImg.naturalWidth) syncPetAspect();
-  else if (baseImg) baseImg.addEventListener('load', syncPetAspect);
+  const headImg = headSets[0].stand;
+  if (headImg && headImg.complete && headImg.naturalWidth) syncPetAspect();
+  else if (headImg) headImg.addEventListener('load', syncPetAspect);
 
   // === Physics ===
   // All values are tuned per 60fps frame; update() scales by real elapsed time
@@ -367,8 +367,8 @@
     const now = performance.now();
     if (window.ClothWind && window.ClothWind.get(i) > 0) pet.spriteUntil = now + 1500;
     if (pet._toyActive && !(pet.faceImgs && pet.faceImgs['1'])) {
-      const set = baseSets[i] || baseSets[0];
-      if (set.toy && !set.toy._failed && !set.toy._fallbackBase && set.toy.complete && set.toy.naturalWidth) pet.spriteUntil = now + 300;
+      const set = headSets[i] || headSets[0];
+      if (set.toy && !set.toy._failed && !set.toy._fallbackHead && set.toy.complete && set.toy.naturalWidth) pet.spriteUntil = now + 300;
     }
     return !(pet.spriteUntil > now);
   }
@@ -783,11 +783,11 @@
       const state = getState(pet);
 
       // choose base set
-      let set = baseSets[i] || baseSets[0];
+      let set = headSets[i] || headSets[0];
       let img = set[state];
       let useTintFallback = false;
       if (!img || img._failed) {
-        set = baseSets[0];
+        set = headSets[0];
         img = set[state];
         useTintFallback = (i !== 0);
       }
@@ -798,7 +798,7 @@
       if (pet._toyActive) {
         let toyImg = set.toy;
         if (!toyImg || toyImg._failed) {
-          toyImg = baseSets[0].toy;
+          toyImg = headSets[0].toy;
           if (toyImg && !toyImg._failed && i !== 0) useTintFallback = true;
         }
         if (toyImg && !toyImg._failed) img = toyImg;
@@ -831,7 +831,7 @@
       // Back pieces (behind the body)
       if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(ctx, state, pet.x - pet.w / 2, pet.y - pet.h / 2, pet.w, pet.h, i);
 
-      // Base (naked)
+      // Head (naked)
       safeDraw(img, pet.x - pet.w / 2, pet.y - pet.h / 2, pet.w, pet.h);
 
       // Outfit overlay (per pet)
