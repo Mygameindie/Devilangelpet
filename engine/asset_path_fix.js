@@ -92,7 +92,9 @@
     const m = POSE.exec(failed);
     const core = m ? m[1].split('_').filter(t => t !== '2').join('_') : '';
     const two = fb === 'base_2.png';
-    const headUrl = IMAGE_DIR + 'parts/' + (m ? (HEAD_FILE[core] || 'head_' + core) : 'head') + (two ? '_2' : '') + '.png';
+    const headUrl = IMAGE_DIR + 'parts/' + (m && core ? (HEAD_FILE[core] || 'head_' + core) : 'head') + (two ? '_2' : '') + '.png';
+    // A pose head that isn't drawn yet (head_sick_2.png ...) shows the character's normal head.
+    const normalHeadUrl = IMAGE_DIR + 'parts/head' + (two ? '_2' : '') + '.png';
     const key = fb + '+' + headUrl;
     if (composed.has(key)) return cb(composed.get(key));
     const body = new Image(), head = new Image();
@@ -119,7 +121,11 @@
     };
     body.onload = done; head.onload = done;
     body.onerror = () => { bodyOk = false; done(); };
-    head.onerror = () => { headOk = false; done(); };
+    head.onerror = () => {
+      if (head.__normal || headUrl === normalHeadUrl) { headOk = false; done(); return; }
+      head.__normal = true;
+      desc.set.call(head, normalHeadUrl);
+    };
     if (!FROM_HEADS) desc.set.call(body, IMAGE_DIR + fb);
     desc.set.call(head, headUrl);
   }
