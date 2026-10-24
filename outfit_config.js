@@ -189,7 +189,7 @@ window.OUTFIT_CONFIG = {
   // images/. Any category left out here is hidden from his Dress Up panel.
   // -------------------------------------------------------------------------
   pet2: {
-    bottomUnderwear:   ["bottomunderwear1_2", "boxers1_2"],
+    bottomUnderwear:   ["bottomunderwear1_2", "boxers1_2", "boxers2_2"],
     top:               ["top1_2"],
     bottom:            ["pants1_2"],
     bodysuit:          ["bodysuit1_2"],
@@ -211,6 +211,8 @@ window.OUTFIT_CONFIG = {
     },
     pet2: {
       bottomUnderwear: "boxers1_2",
+	  socks: "socks1_2",
+	  hat: "hat1_2",
     },
   },
 };
