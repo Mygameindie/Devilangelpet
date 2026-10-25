@@ -52,10 +52,11 @@
 // ===========================================================
 
 // The moving skirt piece of dress1, as fractions (0..1) of the picture.
-// The blue dress: the skirt starts at its waist seam (y 858 of 1134) and ends
-// at the hem. Everything above it (bust, bodice) stays on the body.
+// The gold dress: the skirt flares out from its waist (y 818 of 1134, just
+// above the white scallops) down to the hem (y 942), x 275..576. Everything
+// above it (bust, bodice, neckline) stays on the body.
 const DRESS1_SKIRT = {
-  left: 0.33, right: 0.77, top: 0.60, bottom: 0.985,
+  left: 0.31, right: 0.69, top: 0.72, bottom: 0.84,
 };
 
 //  RAGDOLL (ported from Computer-pet): each pixel of a garment moves with the
@@ -134,7 +135,7 @@ window.OUTFIT_CONFIG = {
     // place, so the back piece uses the same box and lifts together with it.
     // Blown hard: the hem is thrown up to the waist and flared flat, so what is
     // under the skirt shows. Lower lift / flare for a gentler blow.
-    dress1: { style: "lift", region: DRESS1_SKIRT, backRegion: DRESS1_SKIRT, tune: { lift: 0.44, flare: 11.0, curve: 0.12, invert: 0.7} },
+    dress1: { style: "lift", region: DRESS1_SKIRT, backRegion: DRESS1_SKIRT, tune: { lift: 0.34, flare: 0.75, curve: 0.10 } },
   },
 
   // -------------------------------------------------------------------------
