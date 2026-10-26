@@ -56,7 +56,7 @@
 // above the white scallops) down to the hem (y 942), x 275..576. Everything
 // above it (bust, bodice, neckline) stays on the body.
 const DRESS1_SKIRT = {
-  left: 0.31, right: 0.69, top: 0.6, bottom: 0.84,
+  left: 0.31, right: 0.69, top: 0.72, bottom: 0.84,
 };
 
 //  RAGDOLL (ported from Computer-pet): each pixel of a garment moves with the
