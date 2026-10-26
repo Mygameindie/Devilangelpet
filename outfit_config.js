@@ -133,9 +133,10 @@ window.OUTFIT_CONFIG = {
 },
     // The gold skirt of dress1. Its back picture has the same skirt in the same
     // place, so the back piece uses the same box and lifts together with it.
-    // Blown hard: the hem is thrown up to the waist and flared flat, so what is
-    // under the skirt shows. Lower lift / flare for a gentler blow.
-    dress1: { style: "lift", region: DRESS1_SKIRT, backRegion: DRESS1_SKIRT, tune: { lift: 0.34, flare: 0.75, curve: 0.10 } },
+    // Blown hard: the skirt flips up round the waist like a tulip (invert), so
+    // what is under it shows. Lower invert (e.g. 1.2) for a skirt that only
+    // lifts flat to the waist; leave it out for a gentle billow.
+    dress1: { style: "lift", region: DRESS1_SKIRT, backRegion: DRESS1_SKIRT, tune: { lift: 0.44, flare: 0.6, curve: 0.12, invert: 1.9 } },
   },
 
   // -------------------------------------------------------------------------

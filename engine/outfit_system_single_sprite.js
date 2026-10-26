@@ -953,35 +953,46 @@
       if (rowL[ri] >= 0) {
         const c0 = clampN(Math.floor(rowL[ri] / cellW) - 1, 0, cols - 1);
         const c1 = clampN(Math.ceil(rowR[ri] / cellW) + 1, 1, cols);
+        // Each cell is drawn as a patch of the picture stretched onto the
+        // slanted four-sided shape its corners went to (not an upright box),
+        // so a curved or flipped-up skirt bends smoothly with no stair steps.
+        // A little overlap hides the seams between neighbouring patches.
+        const OV = 1.5;
+        const cellMap = c => {
+          const ax = ((topX[c + 1] - topX[c]) + (botX[c + 1] - botX[c])) / 2 * s / cellW;
+          const ay = ((topY[c + 1] - topY[c]) + (botY[c + 1] - botY[c])) / 2 * s / cellW;
+          const bx = ((botX[c] - topX[c]) + (botX[c + 1] - topX[c + 1])) / 2 * s / cellH;
+          const by = ((botY[c] - topY[c]) + (botY[c + 1] - topY[c + 1])) / 2 * s / cellH;
+          const mx = ((topX[c] + topX[c + 1] + botX[c] + botX[c + 1]) / 4 - ox) * s;
+          const my = ((topY[c] + topY[c + 1] + botY[c] + botY[c + 1]) / 4 - oy) * s;
+          // Picture px measured from the cell's centre -> canvas px.
+          cx.setTransform(ax, ay, bx, by, mx, my);
+        };
         for (let c = c0; c < c1; c++) {
-          const dx0 = ((topX[c] + botX[c]) / 2 - ox) * s;
-          const dx1 = ((topX[c + 1] + botX[c + 1]) / 2 - ox) * s;
-          const dy0 = ((topY[c] + topY[c + 1]) / 2 - oy) * s;
-          const dy1 = ((botY[c] + botY[c + 1]) / 2 - oy) * s;
-          const lx = Math.min(dx0, dx1), dw = Math.abs(dx1 - dx0) + 1.2, dh = dy1 - dy0 + (dy1 < dy0 ? -1 : 1);
-          cx.drawImage(L.moving, c * cellW, r * cellH, cellW, cellH, lx, dy0, dw, dh);
+          cellMap(c);
+          cx.drawImage(L.moving, c * cellW - OV, r * cellH - OV, cellW + OV * 2, cellH + OV * 2,
+            -cellW / 2 - OV, -cellH / 2 - OV, cellW + OV * 2, cellH + OV * 2);
         }
         // Fold light and shade, only where the cloth is waving.
         if (shadeK > 0) {
           cx.globalCompositeOperation = "source-atop";
           for (let c = c0; c < c1; c++) {
-            const dx0 = ((topX[c] + botX[c]) / 2 - ox) * s;
-            const dx1 = ((topX[c + 1] + botX[c + 1]) / 2 - ox) * s;
-            const dy0 = ((topY[c] + topY[c + 1]) / 2 - oy) * s;
-            const dy1 = ((botY[c] + botY[c + 1]) / 2 - oy) * s;
+            const dy0 = (topY[c] + topY[c + 1]) / 2, dy1 = (botY[c] + botY[c + 1]) / 2;
             // Folds turning away are darker; cloth bunched up (rows pushed
             // together as the hem rises) shows its shadowed inside.
-            const bunch = Math.min(1, Math.max(0, 0.85 - (dy1 - dy0) / (cellH * s)) * 1.6);
+            const bunch = Math.min(1, Math.max(0, 0.85 - (dy1 - dy0) / cellH) * 1.6);
             const sl = (topS[c] + topS[c + 1] + botS[c] + botS[c + 1]) / 4 + bunch * 0.3;
             const lvl = Math.min(8, Math.round(Math.abs(sl) * 20));
             if (lvl < 1) continue;
+            cellMap(c);
             cx.globalAlpha = shadeK;
             cx.fillStyle = sl > 0 ? SHADES[lvl - 1] : LIGHTS[lvl - 1];
-            cx.fillRect(Math.min(dx0, dx1), dy0, Math.abs(dx1 - dx0) + 0.8, dy1 - dy0 + 0.8);
+            cx.fillRect(-cellW / 2, -cellH / 2, cellW, cellH);   // no overlap: shade laid twice shows as a grid
           }
           cx.globalAlpha = 1;
           cx.globalCompositeOperation = "source-over";
         }
+        cx.setTransform(1, 0, 0, 1, 0, 0);
       }
       let t = topX; topX = botX; botX = t;
       t = topY; topY = botY; botY = t;
