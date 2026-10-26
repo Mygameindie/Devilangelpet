@@ -45,7 +45,7 @@
   const LEG_FOLLOW = 0.7;          // how much of a leg's swing a skirt's hem takes (0..1)
   const MESH_CELLS = 7;            // cells across the longer side of a bending layer's mesh (the bend is smooth,
                                    // so a coarse mesh looks the same and draws far fewer triangles)
-  const FINE_CELLS = 16;           // the same for cloth (skirts, the bodice): its outline bends, and a
+  const FINE_CELLS = 10;           // the same for cloth (skirts, the bodice): its outline bends, and a
                                    // coarse mesh shows that as a jagged edge
   const HEM_K = 0.14;              // how hard a skirt's hem is pulled toward where it hangs (per step)
   const HEM_DAMP = 0.78;           // share of the hem's swing kept per step

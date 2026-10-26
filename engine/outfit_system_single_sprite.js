@@ -425,8 +425,9 @@
     motionLift: 0.07,  // billow when the pet falls
     dressWaist: 0.40,  // a dress with no region: its top 40% stays still
     rows: 24,          // simulated rows per piece
-    meshCols: 48,      // drawn mesh: at most this many columns ...
-    meshRows: 48,      // ... and rows across the skirt
+    meshCols: 16,      // drawn mesh: at most this many columns ... (each cell is a slanted
+                       // patch, so a coarse mesh still bends smoothly and draws far less)
+    meshRows: 12,      // ... and rows across the skirt
     shade: 0.22,       // how dark the folds get (0 = no fold shading)
     cut: 3,            // sleeves/hands touching the skirt by up to ~2x this
                        // many pixels are cut off it (they never move)
