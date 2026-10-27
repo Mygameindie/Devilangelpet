@@ -55,7 +55,7 @@ Tips:
 
 ## File names
 
-Save into `images/` (not `images/parts/`). Character 2 uses the same names with `_2` (`top1_2.png`), listed under `pet2` in `outfit_config.js`. These names are already listed in `outfit_config.js`,
+Save into `images/` (not `images/parts/`). Character 2 uses the same names with `_2` (`top1_2.png`; extras may end in `_2` too: `jacket1_arm_L_2.png`), listed under `pet2` in `outfit_config.js`. These names are already listed in `outfit_config.js`,
 so each one shows up in Dress Up as soon as the file exists:
 
 | Category (Dress Up tab) | File names |
@@ -67,7 +67,7 @@ so each one shows up in Dress Up as soon as the file exists:
 | Pants / Skirt | `pants1.png`, `skirt1.png` (hangs) |
 | Dress | `dress1.png` (hangs) |
 | Bodysuit | `bodysuit1.png` |
-| Jacket | `jacket1.png` (over the top / dress / bodysuit) |
+| Jacket | `jacket1.png` (over the top / dress / bodysuit), sleeves `jacket1_arm_L.png` / `jacket1_arm_R.png` |
 | Socks | `socks1.png` |
 | Shoes | `shoes1.png` |
 | Glove | `glove1.png` |

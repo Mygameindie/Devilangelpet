@@ -177,6 +177,7 @@ window.OUTFIT_CONFIG = {
     bottom:            ["pants1","pants2", { id: "skirt1", blows: true }],
     dress:             [{ id: "dress1", back: true }],
     bodysuit:          ["bodysuit1"],
+    // Sleeves: jacket1_arm_L.png / jacket1_arm_R.png (boy: jacket1_arm_L_2.png / jacket1_arm_R_2.png).
     jacket:            ["jacket1"],
     socks:             ["socks1"],
     shoes:             ["shoes1"],

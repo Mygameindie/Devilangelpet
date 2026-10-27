@@ -129,14 +129,18 @@
   // The optional extra pictures of a garment (<name>_over / _under / _arm_L /
   // _arm_R / _L / _R; the last two are the ragdoll's own left / right leg pictures). Only asked for once the garment's own picture has loaded, so
   // clothes that don't exist don't cost four failed requests each.
+  // Character 2's extras may also put the "_2" last (jacket1_arm_L_2.png as
+  // well as jacket1_2_arm_L.png): tried when the first name isn't there.
   function extraLayers(prefix) {
     const main = new Image();
     const names = { over: "_over", under: "_under", armL: "_arm_L", armR: "_arm_R", legL: "_L", legR: "_R" };
+    const pet = /^(.*)(_\d+)$/.exec(prefix);
     const out = {};
     Object.keys(names).forEach(k => {
       const im = new Image();
       im._failed = true;           // nothing to draw until it has really loaded
       im.onload = () => { im._failed = false; };
+      if (pet) im.onerror = () => { im.onerror = null; im.src = `${pet[1]}${names[k]}${pet[2]}.png`; };
       out[k] = im;
     });
     main.onload = () => Object.keys(names).forEach(k => { out[k].src = `${prefix}${names[k]}.png`; });
