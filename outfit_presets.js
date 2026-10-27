@@ -9,7 +9,7 @@
 //    1. Add an object to window.OUTFIT_PRESETS.
 //    2. `clothes` maps a category -> the item id from outfit_config.js.
 //       Categories: topUnderwear, bottomUnderwear, onepieceUnderwear,
-//                   top, bottom, dress, shoes, hat.
+//                   top, bottom, dress, bodysuit, jacket, shoes, hat.
 //       Any category you leave out is treated as "None" (taken off).
 //    3. `colors` is OPTIONAL. Map a category -> a color name:
 //       Original, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink.

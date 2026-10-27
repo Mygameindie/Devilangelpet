@@ -67,6 +67,7 @@ so each one shows up in Dress Up as soon as the file exists:
 | Pants / Skirt | `pants1.png`, `skirt1.png` (hangs) |
 | Dress | `dress1.png` (hangs) |
 | Bodysuit | `bodysuit1.png` |
+| Jacket | `jacket1.png` (over the top / dress / bodysuit) |
 | Socks | `socks1.png` |
 | Shoes | `shoes1.png` |
 | Glove | `glove1.png` |
@@ -84,5 +85,5 @@ icon. Same for `socks1_L.png` / `socks1_R.png`, and `_2` boy names (`shoes1_2_L.
 More of one kind: add the number (`top2.png`), then add `"top2"` to that list in
 `outfit_config.js`. A new skirt or dress that hangs: `{ id: "skirt2", hangs: true }`.
 
-Layering (front to back): hat, ears, glasses, bunnysuit bow, glove, dress, bodysuit, top,
+Layering (front to back): hat, ears, glasses, bunnysuit bow, glove, jacket, dress, bodysuit, top,
 pants/skirt, shoes, socks, one-piece underwear, top underwear, bottom underwear.

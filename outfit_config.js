@@ -153,6 +153,9 @@ window.OUTFIT_CONFIG = {
     { key: "bottom",            label: "Pants / Skirt",             z: 110 },
     { key: "dress",             label: "Dress",                     z: 130, blows: 820 },
     { key: "bodysuit",          label: "Bodysuit",                  z: 128 },
+    // Jacket: worn OVER the top, dress or bodysuit (z above all three), and
+    // never taken off by them - it stacks with any of them.
+    { key: "jacket",            label: "Jacket",                    z: 135 },
     { key: "socks",             label: "Socks",                     z: 85  },
     { key: "shoes",             label: "Shoes",                     z: 90  },
     { key: "glove",             label: "Glove",                     z: 140 },
@@ -174,6 +177,7 @@ window.OUTFIT_CONFIG = {
     bottom:            ["pants1","pants2", { id: "skirt1", blows: true }],
     dress:             [{ id: "dress1", back: true }],
     bodysuit:          ["bodysuit1"],
+    jacket:            ["jacket1"],
     socks:             ["socks1"],
     shoes:             ["shoes1"],
     glove:             ["glove1"],
@@ -195,6 +199,7 @@ window.OUTFIT_CONFIG = {
     top:               ["top1_2"],
     bottom:            ["pants1_2"],
     bodysuit:          ["bodysuit1_2"],
+    jacket:            ["jacket1_2"],
     socks:             ["socks1_2"],
     shoes:             ["shoes1_2"],
     glove:             ["glove1_2"],

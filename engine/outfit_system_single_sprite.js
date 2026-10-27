@@ -306,6 +306,8 @@
       }
     }
   }
+  // A jacket is not part of these rules: it layers over a top, dress or
+  // bodysuit and is never removed by them.
   function applyDressRules(p, category, id) {
     if (id === 0 || id === "0") return;
     const sc = window.selectedClothes[p];
