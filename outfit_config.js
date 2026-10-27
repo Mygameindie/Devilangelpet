@@ -216,6 +216,8 @@ window.OUTFIT_CONFIG = {
       hat: "hat1",
       bottomUnderwear: "bottomunderwear1",
       dress: "dress1",
+	  socks: "socks1",
+	  shoes: "shoes1"
     },
     pet2: {
       bottomUnderwear: "boxers1_2",
