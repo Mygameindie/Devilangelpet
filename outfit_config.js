@@ -221,6 +221,9 @@ window.OUTFIT_CONFIG = {
       bottomUnderwear: "boxers1_2",
 	  socks: "socks1_2",
 	  hat: "hat1_2",
+	  shoes: "shoes1_2",
+	  jacket: "jacket1_2",
+	  bottom: "pants1_2"
     },
   },
 };
