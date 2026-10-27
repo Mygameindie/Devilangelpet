@@ -126,6 +126,21 @@
     };
   }
 
+  // Which half of the picture a sleeve is drawn on ("L" = the arm on the left
+  // of the canvas, the ragdoll's arm_L), or null if it can't be read (file://).
+  function sideOf(im) {
+    try {
+      const w = im.naturalWidth, h = im.naturalHeight;
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const x = c.getContext("2d", { willReadFrequently: true });
+      x.drawImage(im, 0, 0);
+      const d = x.getImageData(0, 0, w, h).data;
+      let sum = 0, n = 0;
+      for (let i = 3; i < d.length; i += 16) if (d[i] > 6) { sum += ((i >> 2) % w); n++; }
+      return n ? (sum / n < w / 2 ? "L" : "R") : null;
+    } catch (e) { return null; }
+  }
+
   // The optional extra pictures of a garment (<name>_over / _under / _arm_L /
   // _arm_R / _L / _R; the last two are the ragdoll's own left / right leg pictures). Only asked for once the garment's own picture has loaded, so
   // clothes that don't exist don't cost four failed requests each.
@@ -139,7 +154,7 @@
     Object.keys(names).forEach(k => {
       const im = new Image();
       im._failed = true;           // nothing to draw until it has really loaded
-      im.onload = () => { im._failed = false; };
+      im.onload = () => { im._failed = false; if (k === "armL" || k === "armR") im._side = sideOf(im); };
       if (pet) im.onerror = () => { im.onerror = null; im.src = `${pet[1]}${names[k]}${pet[2]}.png`; };
       out[k] = im;
     });
@@ -1287,6 +1302,13 @@
         return safeDraw(ctx, hex ? tintedImage(im, hex) : im, x, y, w, h);
       };
       if (layer) {
+        // A sleeve goes on the arm it is drawn over, whichever name it has
+        // (_arm_L may mean the character's own left, on the right of the picture).
+        if (layer === "armL" || layer === "armR") {
+          const want = layer === "armL" ? "L" : "R";
+          const swap = layer === "armL" ? "armR" : "armL";
+          if (it[layer] && it[layer]._side && it[layer]._side !== want) layer = swap;
+        }
         if (!behind && !catBehind && extra(layer)) drew = true;
         return;
       }
