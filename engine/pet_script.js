@@ -375,6 +375,21 @@
         sx.drawImage(tops, 0, 0);
         D(sx, 'stand', 0, 0, W, H, i, it => stiffTop(it) && it.z > topZ);
       }
+      // A dress's own _over picture (its bust pieces) is drawn above all the tops;
+      // what is worn over the dress (a jacket) is drawn again over it.
+      let overZ = Infinity;
+      Object.keys(window.selectedClothes[i] || {}).forEach(k => {
+        const cat = (window.dressUpCatalog[i] || window.dressUpCatalog[0] || {})[k];
+        const it = cat && cat.items && cat.items[window.selectedClothes[i][k]];
+        if (it && ownsTop(it) && (it.hangs || it.blows) && legPic(it.over)) overZ = Math.min(overZ, it.z || 0);
+      });
+      if (isFinite(overZ)) {
+        const hi = sized(), hx = hi.getContext('2d');
+        D(hx, 'stand', 0, 0, W, H, i, it => stiffTop(it) && it.z > overZ);
+        hx.globalCompositeOperation = 'destination-in';
+        hx.drawImage(overTop, 0, 0);
+        overTop.getContext('2d').drawImage(hi, 0, 0);
+      }
       D(under.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'under');
       D(armL.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.cuffs, 'armL');
       D(armR.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.cuffs, 'armR');
