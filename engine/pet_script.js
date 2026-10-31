@@ -325,20 +325,25 @@
       // carried by the body and drawn just under the top, so they stay stuck to it.
       D(sx, 'stand', 0, 0, W, H, i, it => it.cuffs, 'armL');
       D(sx, 'stand', 0, 0, W, H, i, it => it.cuffs, 'armR');
-      D(sx, 'stand', 0, 0, W, H, i, it => !it.whole && (it.stiff || (covers(it) && !it.hangs && !it.blows)));
       // A dress (or other hanging garment) that covers the chest: its top half
       // goes over the chest like a top, its skirt still hangs / blows.
       const tops = sized(), tx = tops.getContext('2d');
-      let topLine = Infinity;
+      let topLine = Infinity, topZ = -Infinity;
       D(tx, 'stand', 0, 0, W, H, i, it => {
         if (!covers(it) || !(it.hangs || it.blows)) return false;
         const cut = typeof it.blows === 'number' ? it.blows : RCFG.particles.HipL.y;
         topLine = Math.min(topLine, cut);
+        topZ = Math.max(topZ, it.z || 0);
         return true;
       });
+      // The tops go in by z: under that top half, then the top half, then what is
+      // worn over it (a jacket over a dress).
+      const stiffTop = it => !it.whole && (it.stiff || (covers(it) && !it.hangs && !it.blows));
+      D(sx, 'stand', 0, 0, W, H, i, it => stiffTop(it) && !(isFinite(topLine) && it.z > topZ));
       if (isFinite(topLine)) {
         tx.clearRect(0, Math.round(topLine * cs), W, H);
         sx.drawImage(tops, 0, 0);
+        D(sx, 'stand', 0, 0, W, H, i, it => stiffTop(it) && it.z > topZ);
       }
       D(under.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'under');
       D(armL.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.cuffs, 'armL');
