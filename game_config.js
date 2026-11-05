@@ -18,6 +18,9 @@
 //   noParts   : (optional) ragdoll part names this character never has
 //               (e.g. ["chest_L", "chest_R"]); they are not drawn at all.
 //
+// tailFile: (optional) name of the tail picture in images/parts/
+//   (default "back_tail" -> back_tail.png, back_tail_2.png).
+//
 // posesFromHeads: true = there are no whole-body pictures (base.png,
 //   base_sick.png, base_happy.png ...). Every pose is the body built from
 //   images/parts/ plus that pose's head (head_sick.png, head_happy.png ...).
@@ -28,6 +31,8 @@
 window.GAME_CONFIG = {
   saveKey: "purelilypet_save",
   posesFromHeads: true,
+  // This game's tail is drawn as images/parts/tail.png / tail_2.png.
+  tailFile: "tail",
   // true = the character you pick comes in front of the other one (z below is
   // only the starting order). false = z is a fixed stacking order.
   focusToFront: true,
