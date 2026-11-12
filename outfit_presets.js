@@ -47,17 +47,20 @@ window.OUTFIT_PRESETS = [
     name: "Casual",
     emoji: "👕",
     clothes: { hat: "hat1",
-      bottomUnderwear: "bottomunderwear1",
+      bottomUnderwear: "bottomunderwear1",shoes: "shoes1", socks: "socks1",
       dress: "dress1"},
+	  pet2: {
+      clothes: { jacket: "jacket1_2", bottom: "pants1_2", bottomUnderwear: "bottomunderwear1_2",shoes: "shoes1_2", socks: "socks1_2",hat: "hat1_2" },
   },
+},
   {
     name: "Skirt Day",
     emoji: "🌸",
-    clothes: { top: "top1", bottom: "skirt1", shoes: "shoes1", socks: "socks1", hat: "hat1" },
+    clothes: { jacket: "jacket1",bottomUnderwear: "bottomunderwear1",shoes: "shoes1", socks: "socks1", hat: "hat1" },
     colors:  { top: "Pink", bottom: "Purple" },
     // Boy version: no skirt — same look with pants.
     pet2: {
-      clothes: { top: "top1", bottom: "pants1", shoes: "shoes1", socks: "socks1",hat: "hat1" },
+      clothes: { bottomUnderwear: "bottomunderwear1_2",shoes: "shoes1_2", socks: "socks1_2",hat: "hat1_2" },
       colors:  { top: "Pink", bottom: "Purple" },
     },
   },
